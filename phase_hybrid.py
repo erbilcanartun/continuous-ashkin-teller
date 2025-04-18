@@ -23,7 +23,7 @@ def identify_phase_hybrid(J1, J2, M, n_max_np=20, n_max_mp=10, n_rg_steps=20, b=
     if not only_mp:
         # First try with the faster numpy implementation
         phase = identify_phase_np(J1, J2, M, n_max_np, n_rg_steps, b, d, history_length)
-    
+
         # If the numpy implementation returns "X_Phase" or fails to converge,
         # fall back to the more precise mpmath implementation
         if phase == "X_Phase":

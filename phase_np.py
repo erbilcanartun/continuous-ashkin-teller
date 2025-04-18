@@ -7,7 +7,7 @@ from renormalization_np import get_initial_coefficients, rg_step
 def identify_phase(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2, history_length=3):
     """
     Identify phase based on coefficient patterns with early stopping when convergence is detected.
-    
+
     Args:
         J1, J2, M: Model parameters
         n_max: Maximum Fourier mode
@@ -15,15 +15,15 @@ def identify_phase(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2, history_length=
         b: Length rescaling factor
         d: Dimension
         history_length: Number of past steps to track for convergence
-    
+
     Returns:
         String indicating the identified phase
     """
     e = 1e-3  # Threshold for both phase identification and convergence
-    
+
     # Initialize coefficient array
     lambda_nm = get_initial_coefficients(J1, J2, M, n_max)
-    
+
     # Define coefficient keys to track
     coefficient_indices = [
         (n_max+1, n_max),    # coeff_10
@@ -33,16 +33,16 @@ def identify_phase(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2, history_length=
         (n_max, n_max+2),    # coeff_02
         (n_max+2, n_max+2)   # coeff_22
     ]
-    
+
     # Keep track of convergence status for each coefficient
     stable_iterations = {idx: 0 for idx in coefficient_indices}
-    
+
     # Perform RG flow with convergence check
     prev_lambda_nm = None
-    
+
     for i in range(n_rg_steps):
         lambda_nm = rg_step(lambda_nm, b, d)
-        
+
         # Only start checking conditions after 6 iterations
         if i >= 5:  # This ensures the loop runs at least 6 times (i = 0, 1, 2, 3, 4, 5)
             # Check if the disordered phase is reached
@@ -52,37 +52,37 @@ def identify_phase(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2, history_length=
                 if abs(coeff_value) >= e:
                     all_near_zero = False
                     break
-                    
+
             if all_near_zero:
                 return "D_Phase"  # Early detection of disordered phase
-                
+
             # Check for convergence if we have a previous state to compare with
             if prev_lambda_nm is not None:
                 all_converged = True
-                
+
                 for n_idx, m_idx in coefficient_indices:
                     current_val = lambda_nm[n_idx, m_idx].real
                     prev_val = prev_lambda_nm[n_idx, m_idx].real
-                    
+
                     # Calculate difference between iterations
                     diff = abs(current_val - prev_val)
-                    
+
                     if diff < e:
                         stable_iterations[(n_idx, m_idx)] += 1
                     else:
                         stable_iterations[(n_idx, m_idx)] = 0
                         all_converged = False
-                
+
                 # Break if all coefficients have been stable for enough iterations
                 if all_converged and all(count >= history_length-1 for count in stable_iterations.values()):
                     #print(f"All converged for J={J1}, M={M} at step {i}")
                     break
-                
+
         # Store current state for next iteration
         prev_lambda_nm = lambda_nm.copy()
 
     #print(f"RG finalized at step {i}")
-    
+
     # Extract final coefficients
     coeff_10 = lambda_nm[n_max+1, n_max].real
     coeff_01 = lambda_nm[n_max, n_max+1].real
@@ -90,7 +90,7 @@ def identify_phase(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2, history_length=
     coeff_20 = lambda_nm[n_max+2, n_max].real
     coeff_02 = lambda_nm[n_max, n_max+2].real
     coeff_22 = lambda_nm[n_max+2, n_max+2].real
-    
+
     # Phase conditions
     if (abs(coeff_10) < e and  # (1,0) = 0
         abs(coeff_01) < e and  # (0,1) = 0
@@ -140,7 +140,7 @@ def identify_phase_all_steps(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2):
     # Perform RG flow
     for _ in range(n_rg_steps):
         lambda_nm = rg_step(lambda_nm, b, d)
-   
+
     # Extract normalized coefficients
     coeff_10 = lambda_nm[n_max+1, n_max].real
     coeff_01 = lambda_nm[n_max, n_max+1].real
@@ -148,7 +148,7 @@ def identify_phase_all_steps(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2):
     coeff_20 = lambda_nm[n_max+2, n_max].real
     coeff_02 = lambda_nm[n_max, n_max+2].real
     coeff_22 = lambda_nm[n_max+2, n_max+2].real
-   
+
     # Phase conditions
     if (abs(coeff_10) < e and  # (1,0) = 0
         abs(coeff_01) < e and  # (0,1) = 0
@@ -187,11 +187,11 @@ def identify_phase_all_steps(J1, J2, M, n_max=10, n_rg_steps=20, b=2, d=2):
         return "E_Phase"
     else:
         return "X_Phase"
-        
+
 def generate_phase_diagram(J_values, M_values, n_max=10, n_rg_steps=20, b=2, d=2):
     """
     Generate phase diagram by scanning J, M parameter space for J = J1 = J2
-    
+
     The marker size is dynamically adjusted based on the grid dimensions.
     """
     D_Phase, A_Phase, B_Phase, C_Phase, X_Phase, U_Phase = [],[],[],[],[],[]
@@ -223,10 +223,10 @@ def generate_phase_diagram(J_values, M_values, n_max=10, n_rg_steps=20, b=2, d=2
     base_marker_size = 25  # Base size for a 10x10 grid
     reference_grid_size = 100
     ms = base_marker_size * np.sqrt(reference_grid_size / grid_size)
-    
+
     # Ensure marker size is within reasonable bounds
     ms = max(1, min(ms, 12))  # Limit between 1 and 12
-    
+
     # Plot the results
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=100)
     fig.set_facecolor("white")
@@ -240,18 +240,18 @@ def generate_phase_diagram(J_values, M_values, n_max=10, n_rg_steps=20, b=2, d=2
             "C_Phase":"pink",
             "X_Phase":"black",
             "U_Phase":"yellow"}
-    
+
     if D_Phase: ax.plot(np.array(D_Phase)[:,0], np.array(D_Phase)[:,1], ls="", marker="s", mfc=cdic["D_Phase"], mec=cdic["D_Phase"], ms=ms, alpha=1)
     if A_Phase: ax.plot(np.array(A_Phase)[:,0], np.array(A_Phase)[:,1], ls="", marker="s", mfc=cdic["A_Phase"], mec=cdic["A_Phase"], ms=ms, alpha=1)
     if B_Phase: ax.plot(np.array(B_Phase)[:,0], np.array(B_Phase)[:,1], ls="", marker="s", mfc=cdic["B_Phase"], mec=cdic["B_Phase"], ms=ms, alpha=1)
     if C_Phase: ax.plot(np.array(C_Phase)[:,0], np.array(C_Phase)[:,1], ls="", marker="s", mfc=cdic["C_Phase"], mec=cdic["C_Phase"], ms=ms, alpha=1)
     if X_Phase: ax.plot(np.array(X_Phase)[:,0], np.array(X_Phase)[:,1], ls="", marker="s", mfc=cdic["X_Phase"], mec=cdic["X_Phase"], ms=ms, alpha=1)
     if U_Phase: ax.plot(np.array(U_Phase)[:,0], np.array(U_Phase)[:,1], ls="", marker="s", mfc=cdic["U_Phase"], mec=cdic["U_Phase"], ms=ms, alpha=1)
-    
+
     ax.set_xlabel("J")
     ax.set_ylabel("M")
     ax.tick_params(axis="both", direction="in", width=2, length=4)
     fig.tight_layout()
     plt.show()
-                
+
     return D_Phase, A_Phase, B_Phase, C_Phase, X_Phase, U_Phase
